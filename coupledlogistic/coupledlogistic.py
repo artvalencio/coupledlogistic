@@ -1,4 +1,4 @@
-def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,normalize=True,transient=10000):
+def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,normalize=True,transient=10000,max_retries=10):
     '''Generates time-series dynamics for coupled logistic networks of parameter r
     --------------------------------
     Inputs:
@@ -15,6 +15,9 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,norm
            normalize: whether to rescale each node's series to [0,1].
                  Default: True
            transient: number of initial iterations discarded. Default: 10000
+           max_retries: orbits that leave [0,1] (and so diverge) or get stuck
+                 at 0 are restarted from new initial conditions up to this
+                 many times before a RuntimeError is raised. Default: 10
     --------------------------------
     Output:
            out: each column is time-series for a node 
@@ -120,19 +123,26 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,norm
             if verbose and n % max(1,total//10)==0:
                 print('.',end='')
             out[n+1,:]=step(out[n,:])
-            #degenerate orbit: repeat for new initial cond
-            if np.any((out[n+1,:]==0) & (out[n,:]==0)):
+            #diverging or degenerate orbit: repeat for new initial cond
+            escaped=not np.all((out[n+1,:]>=0) & (out[n+1,:]<=1))
+            if escaped or np.any((out[n+1,:]==0) & (out[n,:]==0)):
                 return None
         return out
 
     if verbose:
         print('Generating time-series')
-    for attempt in range(11):
+    for attempt in range(max_retries+1):
         out=simulate()
         if out is not None:
             break
-        print('recalculating...')
+        if verbose:
+            print('recalculating...')
+    else:
+        raise RuntimeError('orbit diverged or degenerated in %d attempts; check r and sigma' % (max_retries+1))
     out=out[transient:,:]
     if normalize:
-        out=(out-out.min(axis=0))/(out.max(axis=0)-out.min(axis=0))
+        #quick 0 to 1 normalization (constant series become 0)
+        span=out.max(axis=0)-out.min(axis=0)
+        span[span==0]=1
+        out=(out-out.min(axis=0))/span
     return out
