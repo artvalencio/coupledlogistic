@@ -9,27 +9,44 @@ and causality analytical tools.
 
 Requirements:
 
-This package requires previous installation of Python>=3.6, numpy and pandas.
+Python>=3.8 and numpy (installed automatically).
 
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
 Installation:
 
-Windows:
-1) Open command prompt
-2) Change directory to the location where the cami folder is saved (here). 
-   Use chdir command for that operation.
-3) run: " pip3 install . "
-Done!
-
-Linux:
-1) Open terminal
-2) Change directory to the location where the cami folder is saved (here). 
-   Use cd command for that operation.
-3) run: " pip3 install . "
-Done!
+    pip install git+https://github.com/artvalencio/coupledlogistic
 
 Now you can import the package in Python3 as: "import coupledlogistic"
+
+-----------------------------------------------------------------------------
+Usage:
+
+    from coupledlogistic import coupledlogistic
+
+    # node 0 drives node 1 (A[j, i] is the link j -> i)
+    A = [[0, 1],
+         [0, 0]]
+    x = coupledlogistic(100000, 4, A, 0.2, 'diffusive', seed=42)
+    x.shape          # (100000, 2): one column per node, rescaled to [0, 1]
+
+Parameters: tslength, r (one value or one per node), A (binary or weighted
+adjacency matrix), sigma (coupling strength), couplingtype ('diffusive' or
+'kaneko'), and optionally seed, normalize (default True), transient
+(default 10000), max_retries (default 10) and verbose.
+
+Orbits that leave [0, 1] (and therefore diverge) are restarted from new
+initial conditions; if every attempt fails a RuntimeError is raised.
+
+Changes in 0.1.0: output has exactly tslength rows; reproducible output
+with seed; Kaneko coupling uses r of the source node; weighted links;
+diverging orbits are detected instead of returned as NaN; about 5x faster.
+
+-----------------------------------------------------------------------------
+Running the tests:
+
+    pip install -e .[test]
+    pytest
 
 -----------------------------------------------------------------------------
 
