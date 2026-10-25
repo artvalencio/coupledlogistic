@@ -9,8 +9,8 @@ description = "Coupled logistic map networks: a test bench for nonlinear and cau
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "Arthur Valencio"}, {name = "Murilo S. Baptista"}]
-requires-python = ">=3.8"
-dependencies = ["numpy"]
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.20"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -19,7 +19,7 @@ classifiers = [
 
 [project.optional-dependencies]
 test = ["pytest"]
-fast = ["numba"]
+fast = ["numba>=0.55"]
 
 [project.urls]
 Homepage = "https://github.com/artvalencio/coupledlogistic"

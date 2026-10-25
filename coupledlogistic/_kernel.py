@@ -1,4 +1,9 @@
-'''Compiled orbit kernel (optional: needs numba).'''
+'''Compiled orbit kernel (optional: needs numba).
+
+Same update as the numpy backend, written as plain loops that numba compiles
+to machine code (cache=True stores the compiled code on disk, so only the very
+first call pays the compilation time).
+'''
 import numba
 import numpy as np
 
@@ -20,6 +25,7 @@ def simulate_numba(x0, r, a, rowptr, cols, vals, transient, diffusive, out):
         for i in range(n):
             out[0, i] = x[i]
     for t in range(1, total):
+        # logistic map of every node, then the coupling of each node with its sources
         for i in range(n):
             f[i] = r[i] * x[i] * (1.0 - x[i])
         for i in range(n):
@@ -28,14 +34,15 @@ def simulate_numba(x0, r, a, rowptr, cols, vals, transient, diffusive, out):
                 j = cols[k]
                 acc += vals[k] * (x[j] if diffusive else f[j])
             v = a[i] * f[i] + acc
+            # leaving [0, 1] means the orbit diverges; stop at once (NaN fails too)
             if not (v >= 0.0 and v <= 1.0):
                 return False
             if v == 0.0 and x[i] == 0.0:
                 return False
             new[i] = v
         for i in range(n):
-            x[i] = new[i]
-        if t >= transient:
+            x[i] = new[i]  # synchronous update: all nodes use the previous step's values
+        if t >= transient:  # the transient is iterated but not stored
             for i in range(n):
                 out[t - transient, i] = x[i]
     return True
