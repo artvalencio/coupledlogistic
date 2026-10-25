@@ -40,12 +40,26 @@ def assert_follows_equations(out, r, A, sigma, couplingtype):
     np.testing.assert_allclose(out[1:], expected, rtol=1e-12, atol=1e-15)
 
 
+BACKENDS = ['numpy', pytest.param('numba', marks=pytest.mark.skipif(
+    __import__('importlib').util.find_spec('numba') is None, reason='numba not installed'))]
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
 @pytest.mark.parametrize('couplingtype', ['diffusive', 'kaneko'])
 @pytest.mark.parametrize('network', NETWORKS)
-def test_orbit_follows_equations(network, couplingtype):
+def test_orbit_follows_equations(network, couplingtype, backend):
     A = NETWORKS[network]
-    out = coupledlogistic(200, 4, A, 0.15, couplingtype, seed=11, normalize=False, transient=0)
+    out = coupledlogistic(200, 4, A, 0.15, couplingtype, seed=11, normalize=False, transient=0, backend=backend)
     assert_follows_equations(out, 4, A, 0.15, couplingtype)
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
+@pytest.mark.parametrize('couplingtype', ['diffusive', 'kaneko'])
+def test_orbit_after_transient_follows_equations(couplingtype, backend):
+    A = NETWORKS['wheatstone']
+    out = coupledlogistic(300, [3.9, 3.7, 4.0, 3.8], A, 0.15, couplingtype, seed=4, normalize=False, transient=5000,
+                          backend=backend)
+    assert_follows_equations(out, [3.9, 3.7, 4.0, 3.8], A, 0.15, couplingtype)
 
 
 @pytest.mark.parametrize('couplingtype', ['diffusive', 'kaneko'])
@@ -65,3 +79,13 @@ def test_weighted_adjacency(couplingtype):
 def test_without_coupling_every_node_is_a_logistic_map():
     out = coupledlogistic(100, [4, 3.9], NETWORKS['pair'], 0.0, 'kaneko', seed=1, normalize=False, transient=0)
     np.testing.assert_allclose(out[1:], np.array([4, 3.9]) * out[:-1] * (1 - out[:-1]))
+
+
+@pytest.mark.parametrize('backend', BACKENDS)
+def test_random_weighted_network(backend):
+    rng = np.random.default_rng(0)
+    A = (rng.random((12, 12)) < 0.2) * rng.random((12, 12))
+    np.fill_diagonal(A, 0)
+    for couplingtype in ('diffusive', 'kaneko'):
+        out = coupledlogistic(150, 4, A, 0.1, couplingtype, seed=3, normalize=False, transient=0, backend=backend)
+        assert_follows_equations(out, 4, A, 0.1, couplingtype)

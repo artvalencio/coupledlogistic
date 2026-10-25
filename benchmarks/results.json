@@ -16,5 +16,35 @@
    "peak_mb": 124.13,
    "time_ms": 717.94
   }
+ },
+ "final": {
+  "100 realizations 4 nodes 1e4 (loop)": {
+   "peak_mb": 32.08,
+   "time_ms": 102.98
+  },
+  "diffusive 4 nodes 1e6": {
+   "peak_mb": 32.07,
+   "time_ms": 87.65
+  },
+  "float32 output 4 nodes 1e6": {
+   "peak_mb": 16.04,
+   "time_ms": 98.16
+  },
+  "kaneko 4 nodes 1e5": {
+   "peak_mb": 3.27,
+   "time_ms": 8.77
+  },
+  "kaneko 50 nodes 1e5": {
+   "peak_mb": 40.13,
+   "time_ms": 47.44
+  },
+  "numpy backend: 100 realizations batch": {
+   "peak_mb": 96.1,
+   "time_ms": 280.0
+  },
+  "numpy backend: diffusive 4 nodes 1e6": {
+   "peak_mb": 32.19,
+   "time_ms": 5550.55
+  }
  }
 }

@@ -26,6 +26,10 @@ def cases():
         'kaneko 50 nodes 1e5': lambda: coupledlogistic(10**5, 4, CHAIN50, 0.15, 'kaneko', seed=1),
         '100 realizations 4 nodes 1e4 (loop)': lambda: [coupledlogistic(10**4, 4, WHEATSTONE, 0.15, 'kaneko', seed=s, transient=1000)
                                                         for s in range(100)],
+        'numpy backend: diffusive 4 nodes 1e6': lambda: coupledlogistic(10**6, 4, WHEATSTONE, 0.15, 'diffusive', seed=1, backend='numpy'),
+        'numpy backend: 100 realizations batch': lambda: coupledlogistic(10**4, 4, WHEATSTONE, 0.15, 'kaneko', seed=1, transient=1000,
+                                                                        n_realizations=100, backend='numpy'),
+        'float32 output 4 nodes 1e6': lambda: coupledlogistic(10**6, 4, WHEATSTONE, 0.15, 'diffusive', seed=1, dtype=np.float32),
     }
 
 
