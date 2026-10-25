@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coupledlogistic"
+version = "0.01"
+description = "Coupled logistic map networks: a test bench for nonlinear and causality analysis"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Arthur Valencio"}, {name = "Murilo S. Baptista"}]
+requires-python = ">=3.8"
+dependencies = ["numpy"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/artvalencio/coupledlogistic"
+
+[tool.setuptools]
+packages = ["coupledlogistic"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = ["slow: performance tests"]
