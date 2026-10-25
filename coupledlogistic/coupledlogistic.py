@@ -98,35 +98,31 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,norm
     rng=np.random.default_rng(seed)
     total=transient+tslength
 
-    def step(x):
-        new=np.empty(nonodes)
-        for k in range(nonodes):
-            sumterm=0
-            deg=0
-            for l in range(nonodes):
-                if A[l,k]!=0:
-                    if couplingtype=='diffusive':
-                        sumterm=sumterm+A[l,k]*(x[l]-x[k])
-                    else:
-                        sumterm=sumterm+A[l,k]*r[l]*x[l]*(1-x[l])
-                    deg=deg+A[l,k]
-            if deg>0:
-                new[k]=(1-sigma)*r[k]*x[k]*(1-x[k])+sigma*sumterm/deg
-            else: #deg=0 means it's an input node, so calc only logistic dynamics
-                new[k]=r[k]*x[k]*(1-x[k])
-        return new
+    #matrix form of the update: x' = a*f(x) + M@v, with v=x (diffusive) or v=f(x) (kaneko)
+    instrength=A.sum(axis=0)
+    coupled=instrength!=0
+    W=np.zeros_like(A)
+    W[coupled,:]=A.T[coupled,:]/instrength[coupled,None]
+    a=np.where(coupled,1-sigma,1.0)
+    if couplingtype=='diffusive':
+        M=sigma*(W-np.diag(coupled.astype(float)))
+    else:
+        M=sigma*W
 
     def simulate():
         out=np.empty([total,nonodes])
         out[0,:]=rng.random(nonodes)
-        for n in range(total-1):
-            if verbose and n % max(1,total//10)==0:
-                print('.',end='')
-            out[n+1,:]=step(out[n,:])
-            #diverging or degenerate orbit: repeat for new initial cond
-            escaped=not np.all((out[n+1,:]>=0) & (out[n+1,:]<=1))
-            if escaped or np.any((out[n+1,:]==0) & (out[n,:]==0)):
-                return None
+        x=out[0,:]
+        report=max(1,total//10)
+        with np.errstate(all='ignore'):
+            for n in range(1,total):
+                if verbose and n % report==0:
+                    print('.',end='')
+                f=r*x*(1-x)
+                x=out[n,:]=a*f+M@(x if couplingtype=='diffusive' else f)
+        #diverging (leaves [0,1]) or degenerate (stuck at 0) orbit: repeat for new initial cond
+        if not np.all((out>=0) & (out<=1)) or np.any((out[1:]==0) & (out[:-1]==0)):
+            return None
         return out
 
     if verbose:
