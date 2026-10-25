@@ -1,0 +1,4 @@
+# Runtime dependencies of coupledlogistic (also declared in pyproject.toml)
+numpy>=1.20
+# optional, compiled backend (about 50x faster):
+# numba>=0.55

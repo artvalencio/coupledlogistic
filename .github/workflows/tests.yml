@@ -1,0 +1,19 @@
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e .[test,fast]
+      - run: pip install git+https://github.com/artvalencio/cami-python
+      - run: pytest
+      - run: pip uninstall -y numba && pytest  # numpy backend without numba
