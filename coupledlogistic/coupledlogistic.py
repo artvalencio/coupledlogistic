@@ -1,4 +1,4 @@
-def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False):
+def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,normalize=True,transient=10000):
     '''Generates time-series dynamics for coupled logistic networks of parameter r
     --------------------------------
     Inputs:
@@ -9,6 +9,11 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False):
            sigma: coupling strength
            couplingtype: one of the options: 'diffusive' or 'kaneko'
            verbose: whether to display progress bar or not
+           seed: seed (int) or numpy Generator for the random initial
+                 conditions, for reproducible series. Default: None
+           normalize: whether to rescale each node's series to [0,1].
+                 Default: True
+           transient: number of initial iterations discarded. Default: 10000
     --------------------------------
     Output:
            out: each column is time-series for a node 
@@ -72,137 +77,61 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False):
        (1)ICSMB, University of Aberdeen,UK
       *Support: CNPq (Brazil)'''
 
-    import numpy as  np
-    import pandas as pd
-    A=np.array(A)
+    import numpy as np
+    A=np.array(A,dtype=float)
     tslength=int(tslength)
-    if verbose==True:
-        print('Generating time-series')
+    transient=int(transient)
     if A.ndim!=2 or A.shape[0]!=A.shape[1]:
         raise ValueError('adjacency matrix A must be square')
     if couplingtype not in ('diffusive','kaneko'):
         raise ValueError("couplingtype must be 'diffusive' or 'kaneko'")
     nonodes=A.shape[0]
-
     r=np.atleast_1d(np.asarray(r,dtype=float))
     if len(r)==1:
         r=np.ones(nonodes)*r[0]
     elif len(r)!=nonodes:
         raise ValueError('r must be a single number or have one value per node')
+    rng=np.random.default_rng(seed)
+    total=transient+tslength
 
+    def step(x):
+        new=np.empty(nonodes)
+        for k in range(nonodes):
+            sumterm=0
+            deg=0
+            for l in range(nonodes):
+                if A[l,k]==1:
+                    if couplingtype=='diffusive':
+                        sumterm=sumterm+x[l]-x[k]
+                    else:
+                        sumterm=sumterm+r[k]*x[l]*(1-x[l])
+                    deg=deg+1
+            if deg>0:
+                new[k]=(1-sigma)*r[k]*x[k]*(1-x[k])+sigma*sumterm/deg
+            else: #deg=0 means it's an input node, so calc only logistic dynamics
+                new[k]=r[k]*x[k]*(1-x[k])
+        return new
 
-    def diffusivecalc(tslength,r,A,sigma,nonodes):
-    #calculation when diffusive
-        cond=1
-        count=0
-        while cond:    
-            temp=0
-            count=count+1
-            #initial cond
-            out=np.full([tslength+10001,nonodes],np.nan)
-            out[0,:]=np.random.random(nonodes)
-            #calculate
-            for n in range(tslength+10000):
-                #progress bar
-                if verbose==True:
-                    if n % np.floor(tslength/10)==0:
-                        print('.',end='')
-                #actual calc
-                deg=[]
-                for k in range(nonodes):
-                        #calc coupling    
-                        sumterm=0
-                        deg.append(0)
-                        for l in range(nonodes):
-                            if A[l,k]==1:
-                                sumterm=sumterm+out[n,l]-out[n,k]
-                                deg[k]=deg[k]+1
-                        #calc next step
-                        if deg[k]>0:
-                            sumterm=sumterm/deg[k]
-                            out[n+1,k]=(1-sigma)*r[k]*out[n,k]*(1-out[n,k])+sigma*sumterm
-                        else: #deg=0 means it's an input node, so calc only logistic dynamics
-                            out[n+1,k]=r[k]*out[n,k]*(1-out[n,k])
-                        
-                        #error: repeat for new initial cond
-                        if out[n+1,k]==np.nan:
-                            temp=1   
-                            break
-                        elif out[n+1,k]==0 and out[n,k]==0:
-                            temp=1
-                            break
-            #error handling
-            if temp==0:
-                break
-            else:
-                print('recalculating...', end=' ')
-            print(count)
-            if count>10:
-                break
+    def simulate():
+        out=np.empty([total,nonodes])
+        out[0,:]=rng.random(nonodes)
+        for n in range(total-1):
+            if verbose and n % max(1,total//10)==0:
+                print('.',end='')
+            out[n+1,:]=step(out[n,:])
+            #degenerate orbit: repeat for new initial cond
+            if np.any((out[n+1,:]==0) & (out[n,:]==0)):
+                return None
         return out
 
-    def kanekocalc(tslength,r,A,sigma,nonodes):
-    #calculation when kaneko
-        cond=1
-        count=0
-        while cond:
-            count=count+1
-            temp=0
-            #initial cond
-            out=np.full([tslength+10001,nonodes],np.nan)
-            out[0,:]=np.random.random(nonodes)
-            #calculate
-            for n in range(tslength+10000):
-                #progress bar
-                if verbose==True:
-                    if n % np.floor(tslength/10)==0:
-                        print('.',end='')
-                #actual calc
-                deg=[]
-                for k in range(nonodes):
-                        #calc coupling    
-                        sumterm=0
-                        deg.append(0)
-                        for l in range(nonodes):
-                            if A[l,k]==1:
-                                sumterm=sumterm+r[k]*out[n,l]*(1-out[n,l])
-                                deg[k]=deg[k]+1
-                        #calc next step
-                        if deg[k]>0:
-                            sumterm=sumterm/deg[k]
-                            out[n+1,k]=(1-sigma)*r[k]*out[n,k]*(1-out[n,k])+sigma*sumterm
-                        else: #deg=0 means it's an input node, so calc only logistic dynamics
-                            out[n+1,k]=r[k]*out[n,k]*(1-out[n,k])
-                        
-                        #error: repeat for new initial cond
-                        if out[n+1,k]==np.nan:
-                            temp=1   
-                            break
-                        elif out[n+1,k]==0 and out[n,k]==0:
-                            temp=1
-                            break           
-            #error handling
-            if temp==0:
-                break
-            else:
-                print('recalculating...',end=' ')
-            print(count)
-            if count>10:
-                break
-        return out
-
-    def normal(x):
-        #NORMAL Quick 0 to 1 nomalization
-        return (x-min(x))/(max(x)-min(x))
-        
-    if couplingtype=='diffusive':
-        out=diffusivecalc(tslength,r,A,sigma,nonodes)
-    elif couplingtype=='kaneko':
-        out=kanekocalc(tslength,r,A,sigma,nonodes)
-    
-    #cut transient
-    out=out[10001:,:]
-    #normalize
-    for i in range(nonodes):
-        out[:,i]=normal(out[:,i])
+    if verbose:
+        print('Generating time-series')
+    for attempt in range(11):
+        out=simulate()
+        if out is not None:
+            break
+        print('recalculating...')
+    out=out[transient:,:]
+    if normalize:
+        out=(out-out.min(axis=0))/(out.max(axis=0)-out.min(axis=0))
     return out
