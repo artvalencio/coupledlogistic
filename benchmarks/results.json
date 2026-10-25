@@ -1,0 +1,20 @@
+{
+ "baseline": {
+  "100 realizations 4 nodes 1e4 (loop)": {
+   "peak_mb": 32.76,
+   "time_ms": 6230.54
+  },
+  "diffusive 4 nodes 1e6": {
+   "peak_mb": 96.39,
+   "time_ms": 5757.43
+  },
+  "kaneko 4 nodes 1e5": {
+   "peak_mb": 9.99,
+   "time_ms": 515.33
+  },
+  "kaneko 50 nodes 1e5": {
+   "peak_mb": 124.13,
+   "time_ms": 717.94
+  }
+ }
+}
