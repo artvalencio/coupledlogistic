@@ -5,7 +5,8 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,norm
            tslength: length of the time-series (number of points)
            r: logistic map free parameter. Can be a single number (all nodes
               are equal) or a vector (specifying different r for each node). 
-           A: adjacency matrix
+           A: adjacency matrix, A[j,i] is the weight of the link j->i
+              (binary or weighted)
            sigma: coupling strength
            couplingtype: one of the options: 'diffusive' or 'kaneko'
            verbose: whether to display progress bar or not
@@ -100,12 +101,12 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False,seed=None,norm
             sumterm=0
             deg=0
             for l in range(nonodes):
-                if A[l,k]==1:
+                if A[l,k]!=0:
                     if couplingtype=='diffusive':
-                        sumterm=sumterm+x[l]-x[k]
+                        sumterm=sumterm+A[l,k]*(x[l]-x[k])
                     else:
-                        sumterm=sumterm+r[k]*x[l]*(1-x[l])
-                    deg=deg+1
+                        sumterm=sumterm+A[l,k]*r[l]*x[l]*(1-x[l])
+                    deg=deg+A[l,k]
             if deg>0:
                 new[k]=(1-sigma)*r[k]*x[k]*(1-x[k])+sigma*sumterm/deg
             else: #deg=0 means it's an input node, so calc only logistic dynamics
