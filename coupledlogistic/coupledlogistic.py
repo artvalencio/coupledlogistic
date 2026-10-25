@@ -78,12 +78,17 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False):
     tslength=int(tslength)
     if verbose==True:
         print('Generating time-series')
-    nonodes=len(A[1,:])
-    
-    if type(r)==int or type(r)==float:
-        r=np.ones(nonodes)*r
-    elif len(r)==1:
+    if A.ndim!=2 or A.shape[0]!=A.shape[1]:
+        raise ValueError('adjacency matrix A must be square')
+    if couplingtype not in ('diffusive','kaneko'):
+        raise ValueError("couplingtype must be 'diffusive' or 'kaneko'")
+    nonodes=A.shape[0]
+
+    r=np.atleast_1d(np.asarray(r,dtype=float))
+    if len(r)==1:
         r=np.ones(nonodes)*r[0]
+    elif len(r)!=nonodes:
+        raise ValueError('r must be a single number or have one value per node')
 
 
     def diffusivecalc(tslength,r,A,sigma,nonodes):
@@ -196,7 +201,7 @@ def coupledlogistic(tslength,r,A,sigma,couplingtype,verbose=False):
         out=kanekocalc(tslength,r,A,sigma,nonodes)
     
     #cut transient
-    out=out[10002:,:]
+    out=out[10001:,:]
     #normalize
     for i in range(nonodes):
         out[:,i]=normal(out[:,i])
