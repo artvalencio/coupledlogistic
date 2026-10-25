@@ -43,6 +43,22 @@ with seed; Kaneko coupling uses r of the source node; weighted links;
 diverging orbits are detected instead of returned as NaN; about 5x faster.
 
 -----------------------------------------------------------------------------
+Performance (0.1.0):
+
+    backend='auto' uses a compiled kernel when numba is installed
+    (pip install coupledlogistic[fast]); backend='numpy' needs only numpy.
+
+    4 nodes, 10^6 steps        5.8 s / 96 MB  ->  0.09 s / 32 MB (numba)
+                                               (16 MB with dtype=numpy.float32)
+    50 nodes, 10^5 steps       0.72 s         ->  0.05 s (numba)
+    100 realizations, 10^4     6.2 s (loop)   ->  0.28 s (numpy, n_realizations=100)
+
+Both backends follow the model equations exactly; because the maps are
+chaotic, their orbits separate after some steps (different rounding), so a
+seed reproduces a series exactly within the same backend.
+Benchmarks: python benchmarks/run.py LABEL
+
+-----------------------------------------------------------------------------
 Running the tests:
 
     pip install -e .[test]
